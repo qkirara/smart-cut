@@ -1,28 +1,28 @@
-[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | **[Français](README.fr.md)** | [한국어](README.ko.md)
+[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | **Français** | [한국어](README.ko.md)
 
 # Smart Cut
 
-Outil d'edition video intelligent base sur l'IA, concu pour les enregistrements de cours. Detecte et supprime automatiquement les silences, les balbutiements, les erreurs, les mots de remplissage et les phrases repetees.
+Outil d'édition vidéo intelligent basé sur l'IA, conçu pour les enregistrements de cours. Détecte et supprime automatiquement les silences, les balbutiements, les erreurs, les mots de remplissage et les phrases répétées.
 
-## Fonctionnalites
+## Fonctionnalités
 
-- **Detection multi-niveaux** : intervalles de silence, phrases repetees, mots de remplissage, balbutiements, faux demarrages, fragments orphelins
-- **Precision au niveau des mots** : utilise les horodatages de mots de faster-whisper pour une detection precise des frontieres
-- **Detection des reprises intra-segment** : detecte les reprises de phrases au sein d'un seul segment Whisper (ex. « laissez-moi vous presenter, laissez-moi vous presenter l'ensemble... »)
-- **Revue LLM optionnelle** : ajoute une revue semantique pour les auto-repetitions et les fragments orphelins
-- **Edition precise a l'image pres** : decoupage FFmpeg en deux passes avec alignement sur les images cles
+- **Détection multi-niveaux** : intervalles de silence, phrases répétées, mots de remplissage, balbutiements, faux démarrages, fragments orphelins
+- **Précision au niveau des mots** : utilise les horodatages de mots de faster-whisper pour une détection précise des frontières
+- **Détection des reprises intra-segment** : détecte les reprises de phrases au sein d'un seul segment Whisper (ex. « laissez-moi vous présenter, laissez-moi vous présenter l'ensemble... »)
+- **Revue LLM optionnelle** : ajoute une revue sémantique pour les auto-répétitions et les fragments orphelins
+- **Édition précise à l'image près** : découpage FFmpeg en deux passes avec alignement sur les images clés
 - **Export EDL** : compatible avec Premiere Pro, DaVinci Resolve, Final Cut
-- **Export PRPROJ** : generation de fichiers de projet Premiere Pro via `export_prproj.py`
+- **Export PRPROJ** : génération de fichiers de projet Premiere Pro via `export_prproj.py`
 
-## Prerequis
+## Prérequis
 
 - Python 3.8+
-- FFmpeg (doit etre dans le PATH)
+- FFmpeg (doit être dans le PATH)
 
 ## Installation
 
 ```bash
-# Dependances principales
+# Dépendances principales
 pip install faster-whisper torch
 
 # Optionnel : pour la revue LLM
@@ -32,19 +32,19 @@ pip install openai       # pour les API compatibles OpenAI
 
 ## Utilisation
 
-### Mode une seule etape (analyse + decoupe)
+### Mode une seule étape (analyse + découpe)
 
 ```bash
 python smart_cut.py auto input.mp4 --output cleaned.mp4
 ```
 
-### Etape par etape
+### Étape par étape
 
 ```bash
-# Etape 1 : Analyser
+# Étape 1 : Analyser
 python smart_cut.py analyze input.mp4 --output-dir ./output
 
-# Etape 2 : Examiner analysis.json, puis executer
+# Étape 2 : Examiner analysis.json, puis exécuter
 python smart_cut.py cut input.mp4 --cut-list ./output/analysis.json --output cleaned.mp4
 ```
 
@@ -59,67 +59,67 @@ python smart_cut.py auto input.mp4 --output cleaned.mp4 \
   --base-url https://api.openai.com/v1
 ```
 
-### Avec Qwen3-ASR pour la transcription de reference (optionnel)
+### Avec Qwen3-ASR pour la transcription de référence (optionnel)
 
 ```bash
 python smart_cut.py auto input.mp4 --output cleaned.mp4 \
   --use-qwen3 --qwen3-model-path /path/to/Qwen3-ASR-1.7B
 ```
 
-## Parametres
+## Paramètres
 
-| Parametre | Par defaut | Description |
+| Paramètre | Par défaut | Description |
 |-----------|-----------|-------------|
-| `--whisper-model` | small | Taille du modele faster-whisper (base/small/medium/large) |
-| `--silence-threshold` | -35dB | Seuil de bruit pour la detection du silence |
-| `--min-silence` | 0.6s | Duree minimale de silence a detecter |
-| `--padding` | 0.08s | Marge autour des segments conserves |
-| `--repeat-threshold` | 0.6 | Seuil de similarite textuelle pour la detection des repetitions |
-| `--llm-review` | false | Activer la revue semantique LLM |
-| `--llm-model` | gpt-4o-mini | Modele LLM pour la revue |
+| `--whisper-model` | small | Taille du modèle faster-whisper (base/small/medium/large) |
+| `--silence-threshold` | -35dB | Seuil de bruit pour la détection du silence |
+| `--min-silence` | 0.6s | Durée minimale de silence à détecter |
+| `--padding` | 0.08s | Marge autour des segments conservés |
+| `--repeat-threshold` | 0.6 | Seuil de similarité textuelle pour la détection des répétitions |
+| `--llm-review` | false | Activer la revue sémantique LLM |
+| `--llm-model` | gpt-4o-mini | Modèle LLM pour la revue |
 | `--api-provider` | openai_compatible | Fournisseur d'API (anthropic/openai_compatible/auto) |
 | `--language` | zh | Code de langue pour la transcription |
 
 ## Fonctionnement
 
 ```
-Video d'entree
+Vidéo d'entrée
   -> FFmpeg : extraction audio (WAV 16kHz)
-  -> FFmpeg silencedetect : detection des intervalles de silence
+  -> FFmpeg silencedetect : détection des intervalles de silence
   -> faster-whisper : transcription avec horodatage des mots
-  -> trim_fillers_from_segments : suppression des mots de remplissage aux frontieres
-  -> split_segments_by_clauses : decoupage des segments longs aux frontieres de propositions
-  -> detect_intra_restarts : detection des reprises au niveau des mots
-  -> build_utterances : fusion silence + ASR dans une timeline unifiee
-  -> detect_repeats : detection des repetitions au niveau des phrases
-  -> detect_orphan_fragments : sous-chaine + correspondance floue
-  -> detect_fillers : segments purs en mots de remplissage / a fort ratio
-  -> detect_stutters : balbutiements au niveau des caracteres (4+ repetitions)
-  -> detect_false_starts : faux demarrages courts avant les continuations
-  -> [optionnel] review_cuts_with_llm : revue au niveau semantique
-  -> generate_cut_list -> FFmpeg : execution des decoupes -> concatenation
-  -> Sortie video nettoyee (H.264/AAC MP4)
+  -> trim_fillers_from_segments : suppression des mots de remplissage aux frontières
+  -> split_segments_by_clauses : découpage des segments longs aux frontières de propositions
+  -> detect_intra_restarts : détection des reprises au niveau des mots
+  -> build_utterances : fusion silence + ASR dans une timeline unifiée
+  -> detect_repeats : détection des répétitions au niveau des phrases
+  -> detect_orphan_fragments : sous-chaîne + correspondance floue
+  -> detect_fillers : segments purs en mots de remplissage / à fort ratio
+  -> detect_stutters : balbutiements au niveau des caractères (4+ répétitions)
+  -> detect_false_starts : faux démarrages courts avant les continuations
+  -> [optionnel] review_cuts_with_llm : revue au niveau sémantique
+  -> generate_cut_list -> FFmpeg : exécution des découpes -> concaténation
+  -> Sortie vidéo nettoyée (H.264/AAC MP4)
 ```
 
-## Algorithmes de detection
+## Algorithmes de détection
 
-### Detection des repetitions
-Comparaison de similarite SequenceMatcher. Les segments courts (<=25 caracteres) utilisent un seuil reduit (0.52). Les segments dont le ratio texte/duree est anormalement bas (probables echecs de transcription Whisper) sont ignores.
+### Détection des répétitions
+Comparaison de similarité SequenceMatcher. Les segments courts (<=25 caractères) utilisent un seuil réduit (0.52). Les segments dont le ratio texte/durée est anormalement bas (probables échecs de transcription Whisper) sont ignorés.
 
-### Detection des fragments orphelins
+### Détection des fragments orphelins
 Correspondance en deux phases :
-1. **Sous-chaine exacte** (toute longueur) : le texte du segment apparait dans un segment conserve voisin
-2. **Sous-chaine floue** (<=4 caracteres uniquement) : fenetre glissante SequenceMatcher >= 0.6
+1. **Sous-chaîne exacte** (toute longueur) : le texte du segment apparaît dans un segment conservé voisin
+2. **Sous-chaîne floue** (<=4 caractères uniquement) : fenêtre glissante SequenceMatcher >= 0.6
 
-### Detection des reprises intra-segment
-Detection au niveau des mots avec trois strategies :
-1. **Basee sur les ecarts** : trouve des ecarts entre mots > 0.6s avec un contenu similaire avant/apres
-2. **Repetition de N mots** : detecte les sequences de mots repetees dans un segment
-3. **Absorption en mot long** : Whisper absorbe parfois les phrases repetees en un seul mot long (>5s pour <=3 caracteres)
+### Détection des reprises intra-segment
+Détection au niveau des mots avec trois stratégies :
+1. **Basée sur les écarts** : trouve des écarts entre mots > 0.6s avec un contenu similaire avant/après
+2. **Répétition de N mots** : détecte les séquences de mots répétées dans un segment
+3. **Absorption en mot long** : Whisper absorbe parfois les phrases répétées en un seul mot long (>5s pour <=3 caractères)
 
-## Entrees/Sorties
+## Entrées/Sorties
 
-| Entree | Notes |
+| Entrée | Notes |
 |--------|-------|
 | .webm | Enregistrements OpenScreen (AV1+Opus) |
 | .mp4 | Support natif |
