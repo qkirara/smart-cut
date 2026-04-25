@@ -1,3 +1,5 @@
+**[English](README.md)** | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [Français](README.fr.md) | [한국어](README.ko.md)
+
 # Smart Cut
 
 AI-powered smart video editing for teaching recordings. Automatically detects and removes silence, stutters, mistakes, filler words, and repeated sentences.
